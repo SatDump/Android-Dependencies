@@ -66,7 +66,7 @@ build_fftw3() {
     cd fftw3
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DBUILD_SHARED_LIBS=OFF -DENABLE_FLOAT=ON -DBUILD_TESTS=OFF ..
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DBUILD_SHARED_LIBS=OFF -DENABLE_FLOAT=ON ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -120,7 +120,8 @@ build_libpng x86
 build_libpng x86_64
 rm -rf libpng
 
-git clone https://github.com/FFTW/fftw3 --depth 1
+#git clone https://github.com/FFTW/fftw3 --depth 1 -b fftw-3.3.10
+wget http://www.fftw.org/fftw-3.3.10.tar.gz && tar -zxvf fftw-3.3.10.tar.gz && mv fftw-3.3.10 fftw3 && rm fftw-3.3.10.tar.gz
 build_fftw3 armeabi-v7a
 build_fftw3 arm64-v8a
 build_fftw3 x86
