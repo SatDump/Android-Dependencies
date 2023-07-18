@@ -73,12 +73,24 @@ build_fftw3() {
     cd ..
 }
 
+build_mbedtls() {
+    echo "--- mbedtls $1"
+    cd mbedtls
+    mkdir build
+    cd build
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
+    cd ..
+    rm -rf build
+    cd ..
+}
+
 build_nng() {
     echo "--- nng $1"
     cd nng
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DNNG_ENABLE_TLS=ON -DMBEDTLS_INCLUDE_DIR=$OUTPUT_DIR/$1/include -DMBEDTLS_TLS_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedtls.a -DMBEDTLS_CRYPTO_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedcrypto.a -DMBEDTLS_X509_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedx509.a ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -127,6 +139,13 @@ build_fftw3 arm64-v8a
 build_fftw3 x86
 build_fftw3 x86_64
 rm -rf fftw3
+
+git clone https://github.com/Mbed-TLS/mbedtls --depth 1
+build_mbedtls armeabi-v7a
+build_mbedtls arm64-v8a
+build_mbedtls x86
+build_mbedtls x86_64
+rm -rf mbedtls
 
 git clone https://github.com/nanomsg/nng --depth 1
 build_nng armeabi-v7a
