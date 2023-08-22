@@ -132,7 +132,7 @@ build_libpng x86
 build_libpng x86_64
 rm -rf libpng
 
-#git clone https://github.com/FFTW/fftw3 --depth 1 -b fftw-3.3.10
+git clone https://github.com/FFTW/fftw3 --depth 1 -b fftw-3.3.10
 wget http://www.fftw.org/fftw-3.3.10.tar.gz && tar -zxvf fftw-3.3.10.tar.gz && mv fftw-3.3.10 fftw3 && rm fftw-3.3.10.tar.gz
 build_fftw3 armeabi-v7a
 build_fftw3 arm64-v8a
@@ -140,7 +140,7 @@ build_fftw3 x86
 build_fftw3 x86_64
 rm -rf fftw3
 
-git clone https://github.com/Mbed-TLS/mbedtls --depth 1
+git clone https://github.com/Mbed-TLS/mbedtls -b v3.4.1 --depth 1
 build_mbedtls armeabi-v7a
 build_mbedtls arm64-v8a
 build_mbedtls x86
