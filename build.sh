@@ -15,13 +15,13 @@
 #(echo y; echo y; echo y; echo y; echo y; echo y; echo y; echo y) | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --sdk_root=android-sdk-linux --licenses
 
 # Install NDK
-#$ANDROID_HOME/bin/sdkmanager --sdk_root=/android-sdk-linux --install "ndk;25.1.8937393" --channel=3 
+#$ANDROID_HOME/bin/sdkmanager --sdk_root=/android-sdk-linux --install "ndk;25.2.9519653" --channel=3 
 
 OUTPUT_DIR=$PWD/output
 
 # Utils
 get_cmake_command() {
-    echo "-DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/25.1.8937393/build/cmake/android.toolchain.cmake -DANDROID_ABI=$1 -DANDROID_PLATFORM=android-23"
+    echo "-DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=$1 -DANDROID_PLATFORM=android-24"
 }
 
 # Packages
@@ -160,4 +160,3 @@ build_zstd arm64-v8a
 build_zstd x86
 build_zstd x86_64
 rm -rf zstd
-
