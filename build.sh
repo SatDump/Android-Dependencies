@@ -111,21 +111,21 @@ build_zstd() {
 
 # Build packages
 # apt install -y python3-mako
-git clone --recursive https://github.com/gnuradio/volk --depth 1
+git clone --recursive https://github.com/gnuradio/volk --depth 1 -b v3.0.0
 build_volk armeabi-v7a
 build_volk arm64-v8a
 build_volk x86
 build_volk x86_64
 rm -rf volk
 
-git clone https://github.com/madler/zlib --depth 1
+git clone https://github.com/madler/zlib --depth 1 -b v1.3
 build_zlib armeabi-v7a
 build_zlib arm64-v8a
 build_zlib x86
 build_zlib x86_64
 rm -rf zlib
 
-git clone https://github.com/glennrp/libpng --depth 1
+git clone https://github.com/glennrp/libpng --depth 1 -b v1.6.40
 build_libpng armeabi-v7a
 build_libpng arm64-v8a
 build_libpng x86
@@ -140,21 +140,21 @@ build_fftw3 x86
 build_fftw3 x86_64
 rm -rf fftw3
 
-git clone https://github.com/Mbed-TLS/mbedtls -b v3.4.1 --depth 1
+git clone https://github.com/Mbed-TLS/mbedtls --depth 1 -b v3.4.1
 build_mbedtls armeabi-v7a
 build_mbedtls arm64-v8a
 build_mbedtls x86
 build_mbedtls x86_64
 rm -rf mbedtls
 
-git clone https://github.com/nanomsg/nng --depth 1
+git clone https://github.com/nanomsg/nng --depth 1 -b v1.5.2
 build_nng armeabi-v7a
 build_nng arm64-v8a
 build_nng x86
 build_nng x86_64
 rm -rf nng
 
-git clone https://github.com/facebook/zstd --depth 1
+git clone https://github.com/facebook/zstd --depth 1 -b v1.5.5
 build_zstd armeabi-v7a
 build_zstd arm64-v8a
 build_zstd x86
