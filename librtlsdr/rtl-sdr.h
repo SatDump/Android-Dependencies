@@ -61,6 +61,7 @@ RTLSDR_API int rtlsdr_get_device_usb_strings(uint32_t index,
 RTLSDR_API int rtlsdr_get_index_by_serial(const char *serial);
 
 RTLSDR_API int rtlsdr_open(rtlsdr_dev_t **dev, uint32_t index);
+
 RTLSDR_API int rtlsdr_open_fd(rtlsdr_dev_t **dev, int fd);
 
 RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
@@ -391,13 +392,14 @@ RTLSDR_API int rtlsdr_cancel_async(rtlsdr_dev_t *dev);
 RTLSDR_API int rtlsdr_set_bias_tee(rtlsdr_dev_t *dev, int on);
 
 /*!
- * Enable or disable any GPIO.
+ * Enable or disable the bias tee on the given GPIO pin.
+ *
  * \param dev the device handle given by rtlsdr_open()
- * \param gpio_pin GPIO pin number for ON
- * \param on 1 for GPIO on. 0 for GPIO off.
+ * \param gpio the gpio pin to configure as a Bias T control.
+ * \param on  1 for Bias T on. 0 for Bias T off.
+ * \return -1 if device is not initialized. 0 otherwise.
  */
-RTLSDR_API int rtlsdr_set_gpio(rtlsdr_dev_t *dev, int gpio_pin, int on);
-
+RTLSDR_API int rtlsdr_set_bias_tee_gpio(rtlsdr_dev_t *dev, int gpio, int on);
 
 
 #ifdef __cplusplus
