@@ -43,7 +43,7 @@ build_volk() {
     cd volk
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DENABLE_STATIC_LIBS=ON ..
+    cmake $(get_cmake_command $1) -DCMAKE_FIND_ROOT_PATH=$OUTPUT_DIR/$1 -DENABLE_TESTING=OFF -DENABLE_MODTOOL=OFF -DENABLE_STATIC_LIBS=ON -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -67,7 +67,7 @@ build_libpng() {
     cd libpng
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    cmake $(get_cmake_command $1) -DPNG_EXECUTABLES=OFF -DPNG_TESTS=OFF -DPNG_SHARED=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -136,7 +136,7 @@ build_cpufeatures x86_64
 rm -rf cpu_features
 
 # apt install -y python3-mako
-git clone --recursive https://github.com/gnuradio/volk --depth 1 -b v3.1.0
+git clone https://github.com/gnuradio/volk --depth 1 -b v3.1.0
 build_volk armeabi-v7a
 build_volk arm64-v8a
 build_volk x86
