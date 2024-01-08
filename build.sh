@@ -25,6 +25,19 @@ get_cmake_command() {
 }
 
 # Packages
+build_cpufeatures() {
+    echo "--- cpu_features $1"
+    cd cpu_features
+    mkdir build
+    cd build
+    cmake $(get_cmake_command $1) -DBUILD_TESTING=OFF -DBUILD_EXECUTABLE=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
+    cd ..
+    rm -rf build
+    cd ..
+}
+
+
 build_volk() {
     echo "--- Volk $1"
     cd volk
@@ -78,7 +91,12 @@ build_mbedtls() {
     cd mbedtls
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    if [ "$1" = "x86" ]
+    then
+        cmake $(get_cmake_command $1) -DCMAKE_C_FLAGS="-msse2 -maes -mpclmul" -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    else
+        cmake $(get_cmake_command $1) -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    fi
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -90,7 +108,7 @@ build_nng() {
     cd nng
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DNNG_ENABLE_TLS=ON -DMBEDTLS_INCLUDE_DIR=$OUTPUT_DIR/$1/include -DMBEDTLS_TLS_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedtls.a -DMBEDTLS_CRYPTO_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedcrypto.a -DMBEDTLS_X509_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedx509.a ..
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DNNG_ENABLE_TLS=ON -DNNG_TOOLS=OFF -DNNG_TESTS=OFF -DNNG_ENABLE_NNGCAT=OFF -DMBEDTLS_INCLUDE_DIR=$OUTPUT_DIR/$1/include -DMBEDTLS_TLS_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedtls.a -DMBEDTLS_CRYPTO_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedcrypto.a -DMBEDTLS_X509_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedx509.a ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -102,7 +120,7 @@ build_zstd() {
     cd zstd
     mkdir build2
     cd build2
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ../build/cmake -DZSTD_BUILD_STATIC=ON
+    cmake $(get_cmake_command $1) -DZSTD_BUILD_PROGRAMS=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ../build/cmake -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build2
@@ -110,8 +128,15 @@ build_zstd() {
 }
 
 # Build packages
+git clone https://github.com/google/cpu_features --depth 1 -b v0.9.0
+build_cpufeatures armeabi-v7a
+build_cpufeatures arm64-v8a
+build_cpufeatures x86
+build_cpufeatures x86_64
+rm -rf cpu_features
+
 # apt install -y python3-mako
-git clone --recursive https://github.com/gnuradio/volk --depth 1 -b v3.0.0
+git clone --recursive https://github.com/gnuradio/volk --depth 1 -b v3.1.0
 build_volk armeabi-v7a
 build_volk arm64-v8a
 build_volk x86
@@ -140,14 +165,14 @@ build_fftw3 x86
 build_fftw3 x86_64
 rm -rf fftw3
 
-git clone https://github.com/Mbed-TLS/mbedtls --depth 1 -b v3.4.1
+git clone https://github.com/Mbed-TLS/mbedtls --depth 1 -b v3.5.1
 build_mbedtls armeabi-v7a
 build_mbedtls arm64-v8a
 build_mbedtls x86
 build_mbedtls x86_64
 rm -rf mbedtls
 
-git clone https://github.com/nanomsg/nng --depth 1 -b v1.5.2
+git clone https://github.com/nanomsg/nng --depth 1 -b v1.7.1
 build_nng armeabi-v7a
 build_nng arm64-v8a
 build_nng x86
