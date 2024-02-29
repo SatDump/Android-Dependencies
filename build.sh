@@ -127,6 +127,18 @@ build_zstd() {
     cd ..
 }
 
+build_tiff() {
+    echo "--- libtiff $1"
+    cd libtiff
+    mkdir build2
+    cd build2
+    cmake $(get_cmake_command $1) -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
+    cd ..
+    rm -rf build2
+    cd ..
+}
+
 # Build packages
 git clone https://github.com/google/cpu_features --depth 1 -b v0.9.0
 build_cpufeatures armeabi-v7a
@@ -185,3 +197,10 @@ build_zstd arm64-v8a
 build_zstd x86
 build_zstd x86_64
 rm -rf zstd
+
+git clone https://github.com/libsdl-org/libtiff --depth 1 -b v4.6.0
+build_tiff armeabi-v7a
+build_tiff arm64-v8a
+build_tiff x86
+build_tiff x86_64
+rm -rf libtiff
