@@ -115,6 +115,18 @@ build_nng() {
     cd ..
 }
 
+build_curl() {
+    echo "--- curl $1"
+    cd curl
+    mkdir build
+    cd build
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DHTTP_ONLY=ON -DCURL_USE_MBEDTLS=ON -DMBEDTLS_INCLUDE_DIRS=$OUTPUT_DIR/$1/include -DMBEDTLS_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedtls.a -DMBEDCRYPTO_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedcrypto.a -DMBEDX509_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedx509.a ..
+    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
+    cd ..
+    rm -rf build
+    cd ..
+}
+
 build_zstd() {
     echo "--- zstd $1"
     cd zstd
@@ -190,6 +202,13 @@ build_nng arm64-v8a
 build_nng x86
 build_nng x86_64
 rm -rf nng
+
+git clone https://github.com/curl/curl --depth 1 -b curl-8_8_0
+build_curl armeabi-v7a
+build_curl arm64-v8a
+build_curl x86
+build_curl x86_64
+rm -rf curl
 
 git clone https://github.com/facebook/zstd --depth 1 -b v1.5.5
 build_zstd armeabi-v7a
