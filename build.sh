@@ -86,29 +86,12 @@ build_fftw3() {
     cd ..
 }
 
-build_mbedtls() {
-    echo "--- mbedtls $1"
-    cd mbedtls
+build_wolfssl() {
+    echo "--- wolfssl $1"
+    cd wolfssl
     mkdir build
     cd build
-    if [ "$1" = "x86" ]
-    then
-        cmake $(get_cmake_command $1) -DCMAKE_C_FLAGS="-msse2 -maes -mpclmul" -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
-    else
-        cmake $(get_cmake_command $1) -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
-    fi
-    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
-    cd ..
-    rm -rf build
-    cd ..
-}
-
-build_nng() {
-    echo "--- nng $1"
-    cd nng
-    mkdir build
-    cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DNNG_ENABLE_TLS=ON -DNNG_TOOLS=OFF -DNNG_TESTS=OFF -DNNG_ENABLE_NNGCAT=OFF -DMBEDTLS_INCLUDE_DIR=$OUTPUT_DIR/$1/include -DMBEDTLS_TLS_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedtls.a -DMBEDTLS_CRYPTO_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedcrypto.a -DMBEDTLS_X509_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedx509.a ..
+    cmake $(get_cmake_command $1) -DBUILD_SHARED_LIBS=no -DWOLFSSL_CURL=yes -DWOLFSSL_CRYPT_TESTS=no -DWOLFSSL_EXAMPLES=no -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -120,7 +103,19 @@ build_curl() {
     cd curl
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DHTTP_ONLY=ON -DBUILD_STATIC_LIBS=ON -DCURL_USE_MBEDTLS=ON -DMBEDTLS_INCLUDE_DIRS=$OUTPUT_DIR/$1/include -DMBEDTLS_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedtls.a -DMBEDCRYPTO_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedcrypto.a -DMBEDX509_LIBRARY=$OUTPUT_DIR/$1/lib/libmbedx509.a ..
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DHTTP_ONLY=ON -DBUILD_STATIC_LIBS=ON -DCURL_USE_WOLFSSL=ON -DWolfSSL_INCLUDE_DIR=$OUTPUT_DIR/$1/include -DWolfSSL_LIBRARY=$OUTPUT_DIR/$1/lib/libwolfssl.a ..
+    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
+    cd ..
+    rm -rf build
+    cd ..
+}
+
+build_nng() {
+    echo "--- nng $1"
+    cd nng
+    mkdir build
+    cd build
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DNNG_TOOLS=OFF -DNNG_TESTS=OFF -DNNG_ENABLE_NNGCAT=OFF ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
@@ -144,7 +139,7 @@ build_tiff() {
     cd libtiff
     mkdir build2
     cd build2
-    cmake $(get_cmake_command $1) -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    cmake $(get_cmake_command $1) -DBUILD_SHARED_LIBS=OFF -Dtiff-tools=OFF -Dtiff-tests=OFF -Dtiff-docs=OFF -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build2
@@ -152,6 +147,20 @@ build_tiff() {
 }
 
 # Build packages
+git clone https://github.com/wolfSSL/wolfssl --depth 1 -b v5.7.2-stable
+build_wolfssl armeabi-v7a
+build_wolfssl arm64-v8a
+build_wolfssl x86
+build_wolfssl x86_64
+rm -rf wolfssl
+
+git clone https://github.com/curl/curl --depth 1 -b curl-8_9_1
+build_curl armeabi-v7a
+build_curl arm64-v8a
+build_curl x86
+build_curl x86_64
+rm -rf curl
+
 git clone https://github.com/google/cpu_features --depth 1 -b v0.9.0
 build_cpufeatures armeabi-v7a
 build_cpufeatures arm64-v8a
@@ -160,21 +169,21 @@ build_cpufeatures x86_64
 rm -rf cpu_features
 
 # apt install -y python3-mako
-git clone https://github.com/gnuradio/volk --depth 1 -b v3.1.0
+git clone https://github.com/gnuradio/volk --depth 1 -b v3.1.2
 build_volk armeabi-v7a
 build_volk arm64-v8a
 build_volk x86
 build_volk x86_64
 rm -rf volk
 
-git clone https://github.com/madler/zlib --depth 1 -b v1.3
+git clone https://github.com/madler/zlib --depth 1 -b v1.3.1
 build_zlib armeabi-v7a
 build_zlib arm64-v8a
 build_zlib x86
 build_zlib x86_64
 rm -rf zlib
 
-git clone https://github.com/glennrp/libpng --depth 1 -b v1.6.40
+git clone https://github.com/glennrp/libpng --depth 1 -b v1.6.43
 build_libpng armeabi-v7a
 build_libpng arm64-v8a
 build_libpng x86
@@ -189,28 +198,14 @@ build_fftw3 x86
 build_fftw3 x86_64
 rm -rf fftw3
 
-git clone https://github.com/Mbed-TLS/mbedtls --depth 1 -b v3.5.1
-build_mbedtls armeabi-v7a
-build_mbedtls arm64-v8a
-build_mbedtls x86
-build_mbedtls x86_64
-rm -rf mbedtls
-
-git clone https://github.com/nanomsg/nng --depth 1 -b v1.7.1
+git clone https://github.com/nanomsg/nng --depth 1 -b v1.8.0
 build_nng armeabi-v7a
 build_nng arm64-v8a
 build_nng x86
 build_nng x86_64
 rm -rf nng
 
-git clone https://github.com/curl/curl --depth 1 -b curl-8_8_0
-build_curl armeabi-v7a
-build_curl arm64-v8a
-build_curl x86
-build_curl x86_64
-rm -rf curl
-
-git clone https://github.com/facebook/zstd --depth 1 -b v1.5.5
+git clone https://github.com/facebook/zstd --depth 1 -b v1.5.6
 build_zstd armeabi-v7a
 build_zstd arm64-v8a
 build_zstd x86
