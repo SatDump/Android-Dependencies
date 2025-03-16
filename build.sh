@@ -103,7 +103,7 @@ build_curl() {
     cd curl
     mkdir build
     cd build
-    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DHTTP_ONLY=ON -DBUILD_STATIC_LIBS=ON -DCURL_USE_WOLFSSL=ON -DWolfSSL_INCLUDE_DIR=$OUTPUT_DIR/$1/include -DWolfSSL_LIBRARY=$OUTPUT_DIR/$1/lib/libwolfssl.a ..
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DHTTP_ONLY=ON -DBUILD_STATIC_LIBS=ON -DCURL_USE_WOLFSSL=ON -DUSE_LIBIDN2=OFF -DWolfSSL_INCLUDE_DIR=$OUTPUT_DIR/$1/include -DWolfSSL_LIBRARY=$OUTPUT_DIR/$1/lib/libwolfssl.a ..
     make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
     cd ..
     rm -rf build
