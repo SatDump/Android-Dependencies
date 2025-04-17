@@ -399,7 +399,6 @@ int ADDCALL hackrf_init(void)
 		return HACKRF_SUCCESS;
 	}
 	
-	libusb_set_option(NULL, LIBUSB_OPTION_NO_DEVICE_DISCOVERY, NULL);
 	libusb_error = libusb_init(&g_libusb_context);
 	if( libusb_error != 0 )
 	{

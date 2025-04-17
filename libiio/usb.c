@@ -1130,7 +1130,6 @@ struct iio_context *usb_create_context_fd(unsigned int bus, int fd, uint16_t add
 		goto err_destroy_ep_mutex;
 	}
 
-	libusb_set_option(NULL, LIBUSB_OPTION_NO_DEVICE_DISCOVERY, NULL);
 	ret = libusb_init(&usb_ctx);
 	if (ret)
 	{

@@ -72,7 +72,7 @@
  * a single function call. When the function call returns, the transfer has
  * completed and you can parse the results.
  *
- * If you have used libusb-0.1 before, this I/O style will seem familiar to
+ * If you have used the libusb-0.1 before, this I/O style will seem familiar to
  * you. libusb-0.1 only offered a synchronous interface.
  *
  * In our input device example, to read button presses you might write code
@@ -1344,8 +1344,6 @@ void API_EXPORTED libusb_free_transfer(struct libusb_transfer *transfer)
 
 	itransfer = LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
 	usbi_mutex_destroy(&itransfer->lock);
-	if (itransfer->dev)
-		libusb_unref_device(itransfer->dev);
 
 	priv_size = PTR_ALIGN(usbi_backend.transfer_priv_size);
 	ptr = (unsigned char *)itransfer - priv_size;
@@ -1479,11 +1477,11 @@ static int remove_from_flying_list(struct usbi_transfer *itransfer)
  *
  * \param transfer the transfer to submit
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_NO_DEVICE if the device has been disconnected
- * \returns \ref LIBUSB_ERROR_BUSY if the transfer has already been submitted.
- * \returns \ref LIBUSB_ERROR_NOT_SUPPORTED if the transfer flags are not supported
+ * \returns LIBUSB_ERROR_NO_DEVICE if the device has been disconnected
+ * \returns LIBUSB_ERROR_BUSY if the transfer has already been submitted.
+ * \returns LIBUSB_ERROR_NOT_SUPPORTED if the transfer flags are not supported
  * by the operating system.
- * \returns \ref LIBUSB_ERROR_INVALID_PARAM if the transfer size is larger than
+ * \returns LIBUSB_ERROR_INVALID_PARAM if the transfer size is larger than
  * the operating system and/or hardware can support (see \ref asynclimits)
  * \returns another LIBUSB_ERROR code on other failure
  */
@@ -1491,15 +1489,9 @@ int API_EXPORTED libusb_submit_transfer(struct libusb_transfer *transfer)
 {
 	struct usbi_transfer *itransfer =
 		LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
-	struct libusb_context *ctx;
+	struct libusb_context *ctx = TRANSFER_CTX(transfer);
 	int r;
 
-	assert(transfer->dev_handle);
-	if (itransfer->dev)
-		libusb_unref_device(itransfer->dev);
-	itransfer->dev = libusb_ref_device(transfer->dev_handle->dev);
-
-	ctx = HANDLE_CTX(transfer->dev_handle);
 	usbi_dbg(ctx, "transfer %p", transfer);
 
 	/*
@@ -1552,13 +1544,15 @@ int API_EXPORTED libusb_submit_transfer(struct libusb_transfer *transfer)
 	}
 	/*
 	 * We must release the flying transfers lock here, because with
-	 * some backends the submit_transfer method is synchronous.
+	 * some backends the submit_transfer method is synchroneous.
 	 */
 	usbi_mutex_unlock(&ctx->flying_transfers_lock);
 
 	r = usbi_backend.submit_transfer(itransfer);
 	if (r == LIBUSB_SUCCESS) {
 		itransfer->state_flags |= USBI_TRANSFER_IN_FLIGHT;
+		/* keep a reference to this device */
+		libusb_ref_device(transfer->dev_handle->dev);
 	}
 	usbi_mutex_unlock(&itransfer->lock);
 
@@ -1576,29 +1570,9 @@ int API_EXPORTED libusb_submit_transfer(struct libusb_transfer *transfer)
  * \ref libusb_transfer_status::LIBUSB_TRANSFER_CANCELLED
  * "LIBUSB_TRANSFER_CANCELLED."
  *
- * This function behaves differently on Darwin-based systems (macOS and iOS):
- *
- * - Calling this function for one transfer will cause all transfers on the
- *   same endpoint to be cancelled. Your callback function will be invoked with
- *   a transfer status of
- *   \ref libusb_transfer_status::LIBUSB_TRANSFER_CANCELLED
- *   "LIBUSB_TRANSFER_CANCELLED" for each transfer that was cancelled.
-
- * - Calling this function also sends a \c ClearFeature(ENDPOINT_HALT) request
- *   for the transfer's endpoint. If the device does not handle this request
- *   correctly, the data toggle bits for the endpoint can be left out of sync
- *   between host and device, which can have unpredictable results when the
- *   next data is sent on the endpoint, including data being silently lost.
- *   A call to \ref libusb_clear_halt will not resolve this situation, since
- *   that function uses the same request. Therefore, if your program runs on
- *   Darwin and uses a device that does not correctly implement
- *   \c ClearFeature(ENDPOINT_HALT) requests, it may only be safe to cancel
- *   transfers when followed by a device reset using
- *   \ref libusb_reset_device.
- *
  * \param transfer the transfer to cancel
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_NOT_FOUND if the transfer is not in progress,
+ * \returns LIBUSB_ERROR_NOT_FOUND if the transfer is not in progress,
  * already complete, or already cancelled.
  * \returns a LIBUSB_ERROR code on failure
  */
@@ -1685,6 +1659,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 {
 	struct libusb_transfer *transfer =
 		USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
+	struct libusb_device_handle *dev_handle = transfer->dev_handle;
 	struct libusb_context *ctx = ITRANSFER_CTX(itransfer);
 	uint8_t flags;
 	int r;
@@ -1718,6 +1693,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
 	 * this point. */
 	if (flags & LIBUSB_TRANSFER_FREE_TRANSFER)
 		libusb_free_transfer(transfer);
+	libusb_unref_device(dev_handle->dev);
 	return r;
 }
 
@@ -1751,10 +1727,10 @@ int usbi_handle_transfer_cancellation(struct usbi_transfer *itransfer)
  * function will be called the next time an event handler runs. */
 void usbi_signal_transfer_completion(struct usbi_transfer *itransfer)
 {
-	struct libusb_device *dev = itransfer->dev;
+	libusb_device_handle *dev_handle = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer)->dev_handle;
 
-	if (dev) {
-		struct libusb_context *ctx = DEVICE_CTX(dev);
+	if (dev_handle) {
+		struct libusb_context *ctx = HANDLE_CTX(dev_handle);
 		unsigned int event_flags;
 
 		usbi_mutex_lock(&ctx->event_data_lock);
@@ -2013,7 +1989,7 @@ void API_EXPORTED libusb_unlock_event_waiters(libusb_context *ctx)
  * indicates unlimited timeout.
  * \returns 0 after a transfer completes or another thread stops event handling
  * \returns 1 if the timeout expired
- * \returns \ref LIBUSB_ERROR_INVALID_PARAM if timeval is invalid
+ * \returns LIBUSB_ERROR_INVALID_PARAM if timeval is invalid
  * \ref libusb_mtasync
  */
 int API_EXPORTED libusb_wait_for_event(libusb_context *ctx, struct timeval *tv)
@@ -2332,7 +2308,7 @@ static int get_next_timeout(libusb_context *ctx, struct timeval *tv,
  * timeval struct for non-blocking mode
  * \param completed pointer to completion integer to check, or NULL
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_INVALID_PARAM if timeval is invalid
+ * \returns LIBUSB_ERROR_INVALID_PARAM if timeval is invalid
  * \returns another LIBUSB_ERROR code on other failure
  * \ref libusb_mtasync
  */
@@ -2474,7 +2450,7 @@ int API_EXPORTED libusb_handle_events_completed(libusb_context *ctx,
  * \param tv the maximum time to block waiting for events, or zero for
  * non-blocking mode
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_INVALID_PARAM if timeval is invalid
+ * \returns LIBUSB_ERROR_INVALID_PARAM if timeval is invalid
  * \returns another LIBUSB_ERROR code on other failure
  * \ref libusb_mtasync
  */
@@ -2558,7 +2534,7 @@ int API_EXPORTED libusb_pollfds_handle_timeouts(libusb_context *ctx)
  * \param tv output location for a relative time against the current
  * clock in which libusb must be called into in order to process timeout events
  * \returns 0 if there are no pending timeouts, 1 if a timeout was returned,
- * or \ref LIBUSB_ERROR_OTHER on failure
+ * or LIBUSB_ERROR_OTHER on failure
  */
 int API_EXPORTED libusb_get_next_timeout(libusb_context *ctx,
 	struct timeval *tv)

@@ -30,7 +30,6 @@ void __loadConnectionFT601Entry(void) //TODO fixme replace with LoadLibrary/dlop
 ConnectionFT601Entry::ConnectionFT601Entry(void):
     ConnectionRegistryEntry("FT601")
 {
-    libusb_set_option(NULL, LIBUSB_OPTION_NO_DEVICE_DISCOVERY, NULL);
     int r = libusb_init(&ctx); //initialize the library for the session we just declared
     if(r < 0)
         lime::error("Init Error %i", r); //there was an error

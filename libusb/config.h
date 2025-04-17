@@ -22,6 +22,7 @@
 
 /* Define to 1 to start with debug message logging enabled. */
 /* #undef ENABLE_DEBUG_LOGGING */
+// #define ENABLE_DEBUG_LOGGING 0
 
 /* Define to 1 to enable message logging. */
 #define ENABLE_LOGGING 1

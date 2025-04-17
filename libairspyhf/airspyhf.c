@@ -815,11 +815,6 @@ int airspyhf_list_devices(uint64_t *serials, int count)
 		memset(serials, 0, sizeof(uint64_t) * count);
 	}
 
-#ifdef __ANDROID__
-	// LibUSB does not support device discovery on android
-	libusb_set_option(NULL, LIBUSB_OPTION_NO_DEVICE_DISCOVERY, NULL);
-#endif
-
 	if (libusb_init(&context) != 0)
 	{
 		return AIRSPYHF_ERROR;
@@ -898,11 +893,6 @@ static int airspyhf_open_init(airspyhf_device_t** device, uint64_t serial_number
 	{
 		return AIRSPYHF_ERROR;
 	}
-
-#ifdef __ANDROID__
-	// LibUSB does not support device discovery on android
-	libusb_set_option(NULL, LIBUSB_OPTION_NO_DEVICE_DISCOVERY, NULL);
-#endif
 
 	libusb_error = libusb_init(&lib_device->usb_context);
 	if (libusb_error != 0)

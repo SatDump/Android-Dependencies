@@ -26,19 +26,13 @@
 #define LIBUSB_H
 
 #if defined(_MSC_VER)
-#pragma warning(push)
-/* Disable: warning C4200: nonstandard extension used : zero-sized array in struct/union */
-#pragma warning(disable:4200)
 /* on MS environments, the inline keyword is available in C++ only */
 #if !defined(__cplusplus)
 #define inline __inline
 #endif
 /* ssize_t is also not available */
-#ifndef _SSIZE_T_DEFINED
-#define _SSIZE_T_DEFINED
 #include <basetsd.h>
 typedef SSIZE_T ssize_t;
-#endif /* _SSIZE_T_DEFINED */
 #endif /* _MSC_VER */
 
 #include <limits.h>
@@ -74,8 +68,6 @@ typedef SSIZE_T ssize_t;
 #define LIBUSB_DEPRECATED_FOR(f) __attribute__ ((deprecated ("Use " #f " instead")))
 #elif defined(__GNUC__) && (__GNUC__ >= 3)
 #define LIBUSB_DEPRECATED_FOR(f) __attribute__ ((deprecated))
-#elif defined(_MSC_VER)
-#define LIBUSB_DEPRECATED_FOR(f) __declspec(deprecated("Use " #f " instead"))
 #else
 #define LIBUSB_DEPRECATED_FOR(f)
 #endif /* __GNUC__ */
@@ -144,7 +136,7 @@ typedef SSIZE_T ssize_t;
  * Internally, LIBUSB_API_VERSION is defined as follows:
  * (libusb major << 24) | (libusb minor << 16) | (16 bit incremental)
  */
-#define LIBUSB_API_VERSION 0x01000109
+#define LIBUSB_API_VERSION 0x01000108
 
 /* The following is kept for compatibility, but will be deprecated in the future */
 #define LIBUSBX_API_VERSION LIBUSB_API_VERSION
@@ -987,9 +979,8 @@ struct libusb_version {
  * Sessions are created by libusb_init() and destroyed through libusb_exit().
  * If your application is guaranteed to only ever include a single libusb
  * user (i.e. you), you do not have to worry about contexts: pass NULL in
- * every function call where a context is required, and the default context
- * will be used. Note that libusb_set_option(NULL, ...) is special, and adds
- * an option to a list of default options for new contexts.
+ * every function call where a context is required. The default context
+ * will be used.
  *
  * For more information, see \ref libusb_contexts.
  */
@@ -998,7 +989,7 @@ typedef struct libusb_context libusb_context;
 /** \ingroup libusb_dev
  * Structure representing a USB device detected on the system. This is an
  * opaque type for which you are only ever provided with a pointer, usually
- * originating from libusb_get_device_list() or libusb_hotplug_register_callback().
+ * originating from libusb_get_device_list().
  *
  * Certain operations can be performed on a device, but in order to do any
  * I/O you will have to first obtain a device handle using libusb_open().
@@ -1189,8 +1180,7 @@ enum libusb_transfer_flags {
 	 *
 	 * This flag is currently only supported on Linux.
 	 * On other systems, libusb_submit_transfer() will return
-	 * \ref LIBUSB_ERROR_NOT_SUPPORTED for every transfer where this
-	 * flag is set.
+	 * LIBUSB_ERROR_NOT_SUPPORTED for every transfer where this flag is set.
 	 *
 	 * Available since libusb-1.0.9.
 	 */
@@ -2039,7 +2029,7 @@ typedef int (LIBUSB_CALL *libusb_hotplug_callback_fn)(libusb_context *ctx,
  * \param[in] cb_fn the function to be invoked on a matching event/device
  * \param[in] user_data user data to pass to the callback function
  * \param[out] callback_handle pointer to store the handle of the allocated callback (can be NULL)
- * \returns \ref LIBUSB_SUCCESS on success LIBUSB_ERROR code on failure
+ * \returns LIBUSB_SUCCESS on success LIBUSB_ERROR code on failure
  */
 int LIBUSB_CALL libusb_hotplug_register_callback(libusb_context *ctx,
 	int events, int flags,
@@ -2121,22 +2111,65 @@ enum libusb_option {
 	 * This is typically needed on Android, where access to USB devices
 	 * is limited.
 	 *
-	 * For LIBUSB_API_VERSION 0x01000108 it was called LIBUSB_OPTION_WEAK_AUTHORITY
-	 *
 	 * Only valid on Linux.
 	 */
 	LIBUSB_OPTION_NO_DEVICE_DISCOVERY = 2,
 
-#define LIBUSB_OPTION_WEAK_AUTHORITY LIBUSB_OPTION_NO_DEVICE_DISCOVERY
+	/** Flag that libusb has weak authority.
+	 *
+	 * (Deprecated) alias for LIBUSB_OPTION_NO_DEVICE_DISCOVERY
+	 */
+	LIBUSB_OPTION_WEAK_AUTHORITY = 3,
 
-	LIBUSB_OPTION_MAX = 3
+	/** Provide a JNIEnv* pointer for libusb to use on Android.  If this
+	 * pointer is nonzero, the Android SDK will be used for backend
+	 * functions that would otherwise require additional Java code to
+	 * ask for permission.  The pointer must be correct for the current
+	 * thread and process.
+	 *
+	 * This option should be set _before_ calling libusb_init(), and
+	 * specifies the java virtual machine only for new calls to
+	 * libusb_init() after the option is set.  The context pointer is
+	 * unused.
+	 *
+	 * When this option is set, the provided pointer is used for device
+	 * enumeration and connection for the entire lifetime of the libusb
+	 * context.  After connection, the normal linux backend is used via
+	 * the opened file descriptor.
+	 *
+	 * If a device does not have permission to connect, an Android Intent
+	 * is broadcast via UsbManager.requestPermission with action string
+	 * "libusb.android.USB_PERMISSION".  As documented in the Android
+	 * SDK, this Intent will have two "extras" indicating details of the
+	 * USB device in question, and whether or not the user granted
+	 * permission. The call to open the device returns LIBUSB_ERROR_ACCESS.
+	 *
+	 * Before a connection is made and the user provides permission for a
+	 * device, libusb generates fake descriptors for it from Android's API.
+	 * If these descriptors are used before connection, the correct ones
+	 * must be rerequested with an appropriate libusb API function, after
+	 * connection.
+	 *
+	 * A crash may happen if fork() is performed in a way Android doesn't
+	 * track, because the Application Context will no longer be valid.
+	 *
+	 * Only valid on Android.
+	 */
+	LIBUSB_OPTION_ANDROID_JNIENV = 4,
+
+	/** Like LIBUSB_OPTION_ANDROID_JNIENV, except a thread-agnostic JavaVM*
+	 * pointer is passed instead of a thread-specific JNIEnv* pointer.  If
+	 * you can pass a JavaVM* instead of a JNIEnv* pointer, the it does not
+	 * matter what thread it is passed from.
+	 *
+	 * Setting either option is equivalent.
+	 */
+	LIBUSB_OPTION_ANDROID_JAVAVM = 5,
+
+	LIBUSB_OPTION_MAX = 6
 };
 
 int LIBUSB_CALL libusb_set_option(libusb_context *ctx, enum libusb_option option, ...);
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 #if defined(__cplusplus)
 }

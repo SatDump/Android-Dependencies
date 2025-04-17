@@ -531,10 +531,15 @@ static int get_config_descriptor(struct libusb_device *dev, uint8_t config_idx,
 int API_EXPORTED libusb_get_device_descriptor(libusb_device *dev,
 	struct libusb_device_descriptor *desc)
 {
+	libusb_device_handle* libusb_dev_handle = NULL;
+	if(libusb_open(dev, &libusb_dev_handle) != 0)
+		libusb_dev_handle = NULL;
 	usbi_dbg(DEVICE_CTX(dev), " ");
 	static_assert(sizeof(dev->device_descriptor) == LIBUSB_DT_DEVICE_SIZE,
 		      "struct libusb_device_descriptor is not expected size");
 	*desc = dev->device_descriptor;
+	if(libusb_dev_handle != NULL)
+		libusb_close(libusb_dev_handle);
 	return 0;
 }
 
@@ -548,7 +553,7 @@ int API_EXPORTED libusb_get_device_descriptor(libusb_device *dev,
  * valid if 0 was returned. Must be freed with libusb_free_config_descriptor()
  * after use.
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_NOT_FOUND if the device is in unconfigured state
+ * \returns LIBUSB_ERROR_NOT_FOUND if the device is in unconfigured state
  * \returns another LIBUSB_ERROR code on error
  * \see libusb_get_config_descriptor
  */
@@ -588,7 +593,7 @@ int API_EXPORTED libusb_get_active_config_descriptor(libusb_device *dev,
  * valid if 0 was returned. Must be freed with libusb_free_config_descriptor()
  * after use.
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
+ * \returns LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
  * \returns another LIBUSB_ERROR code on error
  * \see libusb_get_active_config_descriptor()
  * \see libusb_get_config_descriptor_by_value()
@@ -634,7 +639,7 @@ int API_EXPORTED libusb_get_config_descriptor(libusb_device *dev,
  * valid if 0 was returned. Must be freed with libusb_free_config_descriptor()
  * after use.
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
+ * \returns LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
  * \returns another LIBUSB_ERROR code on error
  * \see libusb_get_active_config_descriptor()
  * \see libusb_get_config_descriptor()
@@ -699,7 +704,7 @@ void API_EXPORTED libusb_free_config_descriptor(
  * descriptor. Only valid if 0 was returned. Must be freed with
  * libusb_free_ss_endpoint_companion_descriptor() after use.
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
+ * \returns LIBUSB_ERROR_NOT_FOUND if the configuration does not exist
  * \returns another LIBUSB_ERROR code on error
  */
 int API_EXPORTED libusb_get_ss_endpoint_companion_descriptor(
@@ -840,7 +845,7 @@ static int parse_bos(struct libusb_context *ctx,
  * \param bos output location for the BOS descriptor. Only valid if 0 was returned.
  * Must be freed with \ref libusb_free_bos_descriptor() after use.
  * \returns 0 on success
- * \returns \ref LIBUSB_ERROR_NOT_FOUND if the device doesn't have a BOS descriptor
+ * \returns LIBUSB_ERROR_NOT_FOUND if the device doesn't have a BOS descriptor
  * \returns another LIBUSB_ERROR code on error
  */
 int API_EXPORTED libusb_get_bos_descriptor(libusb_device_handle *dev_handle,
@@ -1109,7 +1114,7 @@ int API_EXPORTED libusb_get_string_descriptor_ascii(libusb_device_handle *dev_ha
 	else if (str.desc.bDescriptorType != LIBUSB_DT_STRING)
 		return LIBUSB_ERROR_IO;
 	else if (str.desc.bLength & 1)
-		usbi_warn(HANDLE_CTX(dev_handle), "suspicious bLength %u for language ID string descriptor", str.desc.bLength);
+		usbi_warn(HANDLE_CTX(dev_handle), "suspicious bLength %u for string descriptor", str.desc.bLength);
 
 	langid = libusb_le16_to_cpu(str.desc.wData[0]);
 	r = libusb_get_string_descriptor(dev_handle, desc_index, langid, str.buf, sizeof(str.buf));
@@ -1120,7 +1125,7 @@ int API_EXPORTED libusb_get_string_descriptor_ascii(libusb_device_handle *dev_ha
 	else if (str.desc.bDescriptorType != LIBUSB_DT_STRING)
 		return LIBUSB_ERROR_IO;
 	else if ((str.desc.bLength & 1) || str.desc.bLength != r)
-		usbi_warn(HANDLE_CTX(dev_handle), "suspicious bLength %u for string descriptor (read %d)", str.desc.bLength, r);
+		usbi_warn(HANDLE_CTX(dev_handle), "suspicious bLength %u for string descriptor", str.desc.bLength);
 
 	di = 0;
 	for (si = 2; si < str.desc.bLength; si += 2) {
