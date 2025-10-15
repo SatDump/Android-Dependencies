@@ -122,6 +122,18 @@ build_nng() {
     cd ..
 }
 
+build_sqlite() {
+    echo "--- sqlite $1"
+    cd sqlite
+    mkdir build
+    cd build
+    cmake $(get_cmake_command $1) -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 -DNNG_TOOLS=OFF -DNNG_TESTS=OFF -DNNG_ENABLE_NNGCAT=OFF ..
+    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
+    cd ..
+    rm -rf build
+    cd ..
+}
+
 build_zstd() {
     echo "--- zstd $1"
     cd zstd
@@ -204,6 +216,13 @@ build_nng arm64-v8a
 build_nng x86
 build_nng x86_64
 rm -rf nng
+
+git clone https://github.com/R1NC/sqlite --depth 1 -b master
+build_sqlite armeabi-v7a
+build_sqlite arm64-v8a
+build_sqlite x86
+build_sqlite x86_64
+rm -rf sqlite
 
 git clone https://github.com/facebook/zstd --depth 1 -b v1.5.6
 build_zstd armeabi-v7a
