@@ -158,6 +158,18 @@ build_tiff() {
     cd ..
 }
 
+build_hdf5() {
+    echo "--- hdf5 $1"
+    cd hdf5
+    mkdir build2
+    cd build2
+    cmake $(get_cmake_command $1) -DBUILD_SHARED_LIBS=OFF -DHDF5_BUILD_CPP_LIB=1 -DCMAKE_INSTALL_PREFIX=$OUTPUT_DIR/$1 ..
+    make -j`nproc` DESDIR=$OUTPUT_DIR/$1 install
+    cd ..
+    rm -rf build2
+    cd ..
+}
+
 # Build packages
 git clone https://github.com/wolfSSL/wolfssl --depth 1 -b v5.7.2-stable
 build_wolfssl armeabi-v7a
@@ -237,3 +249,10 @@ build_tiff arm64-v8a
 build_tiff x86
 build_tiff x86_64
 rm -rf libtiff
+
+git clone https://github.com/HDFGroup/hdf5 --depth 1 -b  2.0.0
+build_hdf5 armeabi-v7a
+build_hdf5 arm64-v8a
+build_hdf5 x86
+build_hdf5 x86_64
+rm -rf hdf5
